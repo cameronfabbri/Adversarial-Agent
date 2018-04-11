@@ -68,3 +68,5 @@ checkpoint*
 *.jpg
 *.pyc
 *.pkl
+Tutorial*
+vjoy-testing
