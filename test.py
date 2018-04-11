@@ -118,7 +118,7 @@ def no_keys():
 
 if __name__ == '__main__':
 
-    BATCH_SIZE = 1
+    BATCH_SIZE = 16
     num_actions = 9
 
     parser = argparse.ArgumentParser()
@@ -239,33 +239,31 @@ if __name__ == '__main__':
             mode_choice = np.argmax(prediction)
 
             if mode_choice == 0:
-                straight()
+                #straight()
                 choice_picked = 'straight'
-                
             elif mode_choice == 1:
-                reverse()
+                #reverse()
                 choice_picked = 'reverse'
-                
             elif mode_choice == 2:
-                left()
+                #left()
                 choice_picked = 'left'
             elif mode_choice == 3:
-                right()
+                #right()
                 choice_picked = 'right'
             elif mode_choice == 4:
-                forward_left()
+                #forward_left()
                 choice_picked = 'forward+left'
             elif mode_choice == 5:
-                forward_right()
+                #forward_right()
                 choice_picked = 'forward+right'
             elif mode_choice == 6:
-                reverse_left()
+                #reverse_left()
                 choice_picked = 'reverse+left'
             elif mode_choice == 7:
-                reverse_right()
+                #reverse_right()
                 choice_picked = 'reverse+right'
             elif mode_choice == 8:
-                no_keys()
+                #no_keys()
                 choice_picked = 'nokeys'
 
             if counter % 10 == 0:

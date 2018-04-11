@@ -23,13 +23,12 @@ except: import cPickle as pickle
 '''
 def preprocess(x, high=1, low=-1):
     #return ((high-low)*(x-np.min(x))/(np.max(x)-np.min(x)))+low
-    return (x/127.5)-1.0
+    return (x/127.5)-1.
 
 '''
    Converts a single image from [-1,1] range to [0,255]
 '''
 def deprocess(image):
-    #return ((image+1.0)/2.0)
     image = (image+1.)
     image *= 127.5
     #image = np.clip(image, 0, 255).astype(np.uint8)
@@ -41,9 +40,12 @@ def readDataset(dataset):
     # this isn't in correct order but that's okay because we just pick one, then get the rest from the dictionary
     image_paths = sorted(glob(dataset+'/*.png'))
 
-    pkl_file = open(dataset+'/actions.pkl', 'rb')
-    a = pickle.load(pkl_file)
-
+    try:
+        pkl_file = open(dataset+'/actions_p3.pkl', 'rb')
+        a = pickle.load(pkl_file)
+    except:
+        pkl_file = open(dataset+'/actions_p2.pkl', 'rb')
+        a = pickle.load(pkl_file)
     return image_paths, a
 
 

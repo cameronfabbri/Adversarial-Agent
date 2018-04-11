@@ -1,1 +1,9 @@
-activate myWinowsCV
+activate myWinowsCV to get into the anaconda environment
+
+if there's data that you don't want (like if you pased
+the game and the pause screen shows up), you can get rid of it
+by just deleteting the images you don't want. This is because
+the way data is fed into the network during training works by counting
+the number of images, then randomly picks from them, and matches
+up the actions by ID in a dictionary. So if the images aren't there,
+then the actions in the pickle file will never be chosen.

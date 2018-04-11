@@ -5,8 +5,8 @@ import tensorflow as tf
 from tqdm import tqdm
 import numpy as np
 import skimage.io
-import random
 import argparse
+import random
 import cv2
 import os
 import io
@@ -18,18 +18,18 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset',required=False,default='small',type=str,help='Dataset to use for training')
-    parser.add_argument('--ganloss',required=False,default='wgan',type=str,help='Type of GAN loss to use')
-    parser.add_argument('--numFrames',required=False,default=4,type=int,help='Number of frames to send in at once')
+    parser.add_argument('--ganLoss',required=False,default='wgan',type=str,help='Type of GAN loss to use')
+    parser.add_argument('--numFrames',required=False,default=1,type=int,help='Number of frames to send in at once')
     parser.add_argument('--useNoise',required=False,default=0,type=int,help='Whether or not to use noise')
 
     a = parser.parse_args()
 
     dataset   = a.dataset
-    ganloss   = a.ganloss
+    ganLoss   = a.ganLoss
     numFrames = a.numFrames
     useNoise  = bool(a.useNoise)
 
-    checkpoint_dir = 'checkpoints/dataset_'+dataset+'/ganloss_'+ganloss+'/numFrames_'+str(numFrames)+'/useNoise_'+str(useNoise)+'/'
+    checkpoint_dir = 'checkpoints/dataset_'+dataset+'/ganLoss_'+ganLoss+'/numFrames_'+str(numFrames)+'/useNoise_'+str(useNoise)+'/'
     try: os.makedirs(checkpoint_dir)
     except: pass
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     for t in train_paths_:
         train_paths.append(t.replace('\\','/'))
 
-    BATCH_SIZE = 16
+    BATCH_SIZE = 32
     num_actions = 9
 
     global_step = tf.Variable(0, name='global_step', trainable=False)
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     e = 1e-8
     # cost functions
-    if ganloss == 'wgan':
+    if ganLoss == 'wgan':
         errD = tf.reduce_mean(D_real) - tf.reduce_mean(D_fake)
         errG = -tf.reduce_mean(D_fake)
 
@@ -76,12 +76,12 @@ if __name__ == '__main__':
         slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
         gradient_penalty = 10*tf.reduce_mean((slopes-1.0)**2)
         errD += gradient_penalty
-    if ganloss == 'gan':
+    if ganLoss == 'gan':
         D_real = tf.nn.sigmoid(D_real)
         D_fake = tf.nn.sigmoid(D_fake)
         errG = tf.reduce_mean(-tf.log(D_fake)+e)
         errD = tf.reduce_mean(-(tf.log(D_real+e)+tf.log(1-D_fake+e)))
-    if ganloss == 'lsgan':
+    if ganLoss == 'lsgan':
         errD_real = tf.nn.sigmoid(D_real)
         errD_fake = tf.nn.sigmoid(D_fake)
         errG = 0.5*(tf.reduce_mean(tf.square(errD_fake - 1)))
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     d_vars = [var for var in t_vars if 'd_' in var.name]
     g_vars = [var for var in t_vars if 'g_' in var.name]
 
-    if ganloss == 'wgan':
+    if ganLoss == 'wgan':
         G_train_op = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(errG, var_list=g_vars, global_step=global_step)
         D_train_op = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(errD, var_list=d_vars)
     else:
@@ -138,7 +138,7 @@ if __name__ == '__main__':
         if step > 25: num_D = 5
 
         # make sure if using gan or lsgan num_D is always 1
-        if ganloss == 'gan' or ganloss == 'lsgan': num_D = 1
+        if ganLoss == 'gan' or ganLoss == 'lsgan': num_D = 1
 
         epoch_num = int(step/(num_train/BATCH_SIZE))
 
@@ -206,7 +206,7 @@ if __name__ == '__main__':
         D_loss, G_loss, summary = sess.run([errD, errG, merged_summary_op], feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
 
         gen_action, real_action = sess.run([gen_actions,real_actions], feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
-        print(chr(27) + "[2J")
+        #print(chr(27) + "[2J")
         print(gen_action[0])#.astype('int32'))
         print(real_action[0].astype('int32'))
 
