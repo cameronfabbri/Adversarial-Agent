@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import scipy.misc as misc
 import tensorflow as tf
 from tqdm import tqdm

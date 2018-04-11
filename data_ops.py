@@ -14,7 +14,9 @@ import sys
 import cv2
 import os
 import io
-import _pickle as pickle
+
+try: import _pickle as pickle
+except: import cPickle as pickle
 
 '''
    Converts a single image to range [low,high]
