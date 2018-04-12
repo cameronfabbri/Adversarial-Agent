@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset',required=False,default='small',type=str,help='Dataset to use for training')
-    parser.add_argument('--ganLoss',required=False,default='wgan',type=str,help='Type of GAN loss to use')
+    parser.add_argument('--ganLoss',required=False,default='gan',type=str,help='Type of GAN loss to use')
     parser.add_argument('--numFrames',required=False,default=1,type=int,help='Number of frames to send in at once')
     parser.add_argument('--useNoise',required=False,default=0,type=int,help='Whether or not to use noise')
 
@@ -202,8 +202,17 @@ if __name__ == '__main__':
             sess.run(D_train_op, feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
         
         sess.run(G_train_op, feed_dict={frames_p:batchFrames, noise_p:batchNoise})
-        
+
         D_loss, G_loss, summary = sess.run([errD, errG, merged_summary_op], feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
+
+        # this is a hack - sometimes it helps stabalize training
+        '''
+        if ganLoss == 'gan':
+            while D_loss < 1.0:
+                sess.run(G_train_op, feed_dict={frames_p:batchFrames, noise_p:batchNoise})
+                D_loss = sess.run(errD, feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
+                #print('D_loss:',D_loss)
+        '''
 
         gen_action, real_action = sess.run([gen_actions,real_actions], feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
         #print(chr(27) + "[2J")
