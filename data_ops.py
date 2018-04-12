@@ -39,16 +39,20 @@ def readDataset(dataset):
 
     # this isn't in correct order but that's okay because we just pick one, then get the rest from the dictionary
     image_paths = sorted(glob(dataset+'/*.png'))
-
+    new_dict = {}
+    
     try:
         pkl_file = open(dataset+'/actions_p3.pkl', 'rb')
         a = pickle.load(pkl_file)
+        return image_paths, a
     except:
         pkl_file = open(dataset+'/actions_p2.pkl', 'rb')
         a = pickle.load(pkl_file)
-    return image_paths, a
 
-
+        for key in a:
+           key_ = key.encode('ascii', 'ignore')
+           new_dict[key_] = a[key]
+           return image_paths, new_dict
 
 def readData_old(dataset):
 

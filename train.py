@@ -186,6 +186,8 @@ if __name__ == '__main__':
 
             # get actions - only get first action - put in range [-1, 1]
             #action = train_actions[start_idx]
+            print(info_dict)
+            exit()
             action = info_dict[train_paths[start_idx]]
             action = ((high-low)*(action-np.min(action))/(np.max(action)-np.min(action)))+low
             
