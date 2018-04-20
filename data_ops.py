@@ -15,8 +15,9 @@ import cv2
 import os
 import io
 
-try: import _pickle as pickle
-except: import cPickle as pickle
+#try: import _pickle as pickle
+#except: import cPickle as pickle
+import _pickle as pickle
 
 '''
    Converts a single image to range [low,high]
@@ -40,7 +41,11 @@ def readDataset(dataset):
     # this isn't in correct order but that's okay because we just pick one, then get the rest from the dictionary
     image_paths = sorted(glob(dataset+'/*.png'))
     new_dict = {}
-    
+
+    pkl_file = open(dataset+'/actions.pkl', 'rb')
+    a = pickle.load(pkl_file)
+    return image_paths, a
+    '''
     try:
         pkl_file = open(dataset+'/actions_p3.pkl', 'rb')
         a = pickle.load(pkl_file)
@@ -53,21 +58,4 @@ def readDataset(dataset):
            key_ = key.encode('ascii', 'ignore')
            new_dict[key_] = a[key]
            return image_paths, new_dict
-
-def readData_old(dataset):
-
-    datafile = np.load(dataset+'.npy')
-
-    images   = []
-    commands = []
-    for e in datafile:
-        image   = e[0]
-        command = e[1]
-        images.append(image)
-        commands.append(command)
-
-    # this astype was causing D to explode
-    #images   = np.asarray(images)#.astype('float32')
-    #commands = np.asarray(commands)#.astype('float32')
-    
-    return images,commands
+    '''

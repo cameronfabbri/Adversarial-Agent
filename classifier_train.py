@@ -18,18 +18,17 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset',required=False,default='driving1',type=str,help='Dataset to use for training')
-    parser.add_argument('--ganLoss',required=False,default='gan',type=str,help='Type of GAN loss to use')
     parser.add_argument('--numFrames',required=False,default=1,type=int,help='Number of frames to send in at once')
-    parser.add_argument('--useNoise',required=False,default=1,type=int,help='Whether or not to use noise')
+    parser.add_argument('--useNoise',required=False,default=0,type=int,help='Whether or not to use noise')
 
     a = parser.parse_args()
 
     dataset   = a.dataset
-    ganLoss   = a.ganLoss
     numFrames = a.numFrames
     useNoise  = bool(a.useNoise)
+    useNoise  = 0 # never use noise
 
-    checkpoint_dir = 'checkpoints/dataset_'+dataset+'/ganLoss_'+ganLoss+'/numFrames_'+str(numFrames)+'/useNoise_'+str(useNoise)+'/'
+    checkpoint_dir = 'checkpoints/dataset_'+dataset+'/loss_classification/numFrames_'+str(numFrames)+'/useNoise_'+str(useNoise)+'/'
     try: os.makedirs(checkpoint_dir)
     except: pass
 
@@ -55,52 +54,12 @@ if __name__ == '__main__':
     # generate an set of actions given a series of n frames - possibly with noise
     gen_actions = netG(frames_p, noise_p, num_actions, useNoise)
 
-    # send frames with real actions to D
-    D_real = netD(frames_p, real_actions)
-
-    # send frames with generated actions to D
-    D_fake = netD(frames_p, gen_actions, reuse=True)
-
-    e = 1e-2
-    # cost functions
-    if ganLoss == 'wgan':
-        errD = tf.reduce_mean(D_real) - tf.reduce_mean(D_fake)
-        errG = -tf.reduce_mean(D_fake)
-
-        # gradient penalty
-        epsilon = tf.random_uniform([], 0.0, 1.0)
-        x_hat = real_actions*epsilon + (1-epsilon)*gen_actions
-        d_hat = netD(frames_p, x_hat, reuse=True)
-        gradients = tf.gradients(d_hat, x_hat)[0]
-        slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
-        gradient_penalty = 10*tf.reduce_mean((slopes-1.0)**2)
-        errD += gradient_penalty
-    if ganLoss == 'gan':
-        D_real = tf.nn.sigmoid(D_real)
-        D_fake = tf.nn.sigmoid(D_fake)
-        errG = tf.reduce_mean(-tf.log(D_fake+e))
-        errD = tf.reduce_mean(-(tf.log(D_real+e)+tf.log(1-D_fake+e)))
-    if ganLoss == 'lsgan':
-        errD_real = tf.nn.sigmoid(D_real)
-        errD_fake = tf.nn.sigmoid(D_fake)
-        errG = 0.5*(tf.reduce_mean(tf.square(errD_fake - 1)))
-        errD = tf.reduce_mean(0.5*(tf.square(errD_real - 1)) + 0.5*(tf.square(errD_fake)))
+    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=real_actions,logits=gen_actions))
 
     # tensorboard summaries
-    tf.summary.scalar('d_loss', tf.reduce_mean(errD))
-    tf.summary.scalar('g_loss', tf.reduce_mean(errG))
+    tf.summary.scalar('loss', tf.reduce_mean(loss))
 
-    # get all trainable variables, and split by network G and network D
-    t_vars = tf.trainable_variables()
-    d_vars = [var for var in t_vars if 'd_' in var.name]
-    g_vars = [var for var in t_vars if 'g_' in var.name]
-
-    if ganLoss == 'wgan':
-        G_train_op = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(errG, var_list=g_vars, global_step=global_step)
-        D_train_op = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(errD, var_list=d_vars)
-    else:
-        G_train_op = tf.train.AdamOptimizer(learning_rate=0.0002,beta1=0.5).minimize(errG, var_list=g_vars, global_step=global_step)
-        D_train_op = tf.train.AdamOptimizer(learning_rate=0.0002,beta1=0.5).minimize(errD, var_list=d_vars)
+    train_op = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(loss, global_step=global_step)
 
     saver = tf.train.Saver(max_to_keep=1)
 
@@ -133,11 +92,6 @@ if __name__ == '__main__':
     low  = -1
 
     while True:
-
-        if step > 25: num_D = 5
-
-        # make sure if using gan or lsgan num_D is always 1
-        if ganLoss == 'gan' or ganLoss == 'lsgan': num_D = 1
 
         epoch_num = int(step/(num_train/BATCH_SIZE))
 
@@ -185,12 +139,9 @@ if __name__ == '__main__':
         batchNoise   = np.asarray(batchNoise)
         batchActions = np.asarray(batchActions)
 
-        for itr in range(num_D):
-            sess.run(D_train_op, feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
-        
-        sess.run(G_train_op, feed_dict={frames_p:batchFrames, noise_p:batchNoise})
+        sess.run(train_op, feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
 
-        D_loss, G_loss, summary = sess.run([errD, errG, merged_summary_op], feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
+        loss_, summary = sess.run([loss, merged_summary_op], feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
 
         # this is a hack - sometimes it helps stabalize training
         '''
@@ -207,7 +158,7 @@ if __name__ == '__main__':
         print(real_action[0].astype('int32'))
 
         summary_writer.add_summary(summary, step)
-        print('epoch:',epoch_num,'step:',step,'D loss:',D_loss,'G loss:',G_loss,'\n\n')
+        print('epoch:',epoch_num,'step:',step,'loss:',loss_,'\n\n')
         step += 1
 
         if step%500 == 0:

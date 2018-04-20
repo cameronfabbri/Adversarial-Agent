@@ -54,13 +54,12 @@ def netG(frames, noise, num_actions, useNoise):
         conv8 = tf.expand_dims(conv8, 0)
     print('conv8:',conv8)
 
-    # keyboard actions
-    actions = tcl.fully_connected(conv8, num_actions, activation_fn=tf.nn.tanh, weights_initializer=tf.random_normal_initializer(stddev=0.02), scope='g_actions')
+    # keyboard actions - no batch norm here
+    actions = tcl.fully_connected(conv8, num_actions, activation_fn=tf.nn.softmax, weights_initializer=tf.random_normal_initializer(stddev=0.02), scope='g_actions')
     actions = tf.squeeze(actions)
     if len(actions.get_shape().as_list()) == 1:
         actions = tf.expand_dims(actions,0)
     print('actions:',actions)
-    #exit()
     return actions
 
 def netD(x, y, reuse=False):
@@ -87,7 +86,8 @@ def netD(x, y, reuse=False):
         
         conv4 = tcl.conv2d(conv3, 512, 4, 1, activation_fn=tf.identity, weights_initializer=tf.random_normal_initializer(stddev=0.02), scope='d_conv4')
         conv4 = lrelu(conv4)
-        
+
+        # no activation function - may be using different gan losses
         conv5 = tcl.conv2d(conv4, 1, 1, 1, activation_fn=tf.identity, weights_initializer=tf.random_normal_initializer(stddev=0.02), scope='d_conv5')
 
         print('x:',x)
