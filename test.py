@@ -30,9 +30,9 @@ from nets import *
 WIDTH = 256
 HEIGHT = 256
 
-choices = deque([], maxlen=5)
-hl_hist = 250
-choice_hist = deque([], maxlen=hl_hist)
+#choices = deque([], maxlen=5)
+#hl_hist = 250
+#choice_hist = deque([], maxlen=hl_hist)
 
 w = [1,0,0,0,0,0,0,0,0]
 s = [0,1,0,0,0,0,0,0,0]
@@ -133,28 +133,26 @@ if __name__ == '__main__':
     ganloss = a.ganloss
     numFrames = a.numFrames
     useNoise  = bool(a.useNoise)
-    useNoise = 0
 
     checkpoint_dir = 'checkpoints/dataset_'+dataset+'/ganloss_'+ganloss+'/numFrames_'+str(numFrames)+'/useNoise_'+str(useNoise)+'/'
-    checkpoint_dir = 'checkpoints/dataset_'+dataset+'/loss_classification/numFrames_'+str(numFrames)+'/useNoise_'+str(useNoise)+'/'
+    #checkpoint_dir = 'checkpoints/dataset_'+dataset+'/loss_classification/numFrames_'+str(numFrames)+'/useNoise_'+str(useNoise)+'/'
 
-    frames_p = tf.placeholder(tf.float32, shape=(BATCH_SIZE,256,256,1*numFrames), name='frames_p')
+    frames_p = tf.placeholder(tf.float32, shape=(BATCH_SIZE,256,256,3*numFrames), name='frames_p')
     noise_p  = tf.placeholder(tf.float32, shape=(BATCH_SIZE,256,256,1), name='noise_p')
     real_actions = tf.placeholder(tf.float32, shape=(BATCH_SIZE, num_actions), name='real_actions')
     # generate an set of actions
     gen_actions = netG(frames_p, noise_p, num_actions, useNoise)
 
     saver = tf.train.Saver()
-
     init = tf.group(tf.local_variables_initializer(), tf.global_variables_initializer())
     sess = tf.Session()
     sess.run(init)
 
     checkpoint_dir = checkpoint_dir.replace('/','\\')
     ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
-    print(checkpoint_dir)
+    print('\n\ncheckpoint_dir:',checkpoint_dir)
     if ckpt and ckpt.model_checkpoint_path:
-        print('Restoring previous model...')
+        print('\n\nRestoring previous model...\n\n')
         try:
             saver.restore(sess, ckpt.model_checkpoint_path)
             print('Model restored')
@@ -171,64 +169,35 @@ if __name__ == '__main__':
     for t in train_paths_:
         train_paths.append(t.replace('\\','/'))
 
-    high = 1
-    low = -1
     while(True):
-        
         if not paused:
-            start_idx = random.randint(0,num_train)
             current_size = 0
             batchFrames = []
             batchNoise  = []
-            batchActions = []
+
             # get the first frame
             frames = grab_screen(region=(0,40,800,625))
-            #frames = cv2.cvtColor(frames, cv2.COLOR_BGR2RGB)
+            frames = cv2.cvtColor(frames, cv2.COLOR_BGR2RGB)
             frames = cv2.resize(frames, (256,256))
-            #frames = preprocess(frames)
-            #frames = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
-
-            #frames = cv2.imread(train_paths[start_idx])
-            frames = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
+            
+            #cv2.imwrite('frames.png', frames)
+            #exit()
 
             # convert to range [-1,1]
             frames = preprocess(frames)
-            frames = np.expand_dims(frames, 2)
 
             noise = np.random.normal(-1.0, 1.0, size=[256,256,1]).astype(np.float32)
 
-            action = info_dict[train_paths[start_idx]]
-            #action = ((high-low)*(action-np.min(action))/(np.max(action)-np.min(action)))+low
-
             # grab BATCH_SIZE-1 random training images
             while current_size < BATCH_SIZE:
-                # pick a random starting point
-                start_idx = random.randint(0,num_train)
-                end_idx   = start_idx + (numFrames-1)
-
-                # end case check
-                if end_idx >= num_train:
-                    end_idx = num_train-1
-                    start_idx = num_train-numFrames
-
-                # this makes it work - must be something different between the training frames and my frames
-                #frames = preprocess(cv2.imread(train_paths[start_idx]))
-                #frames = preprocess(cv2.imread('current.png'))
-                
-                # this does not work
-                #frames = frames_og
-
                 batchFrames.append(frames)
                 batchNoise.append(noise)
-                batchActions.append(action)
                 current_size += 1
 
             batchFrames = np.asarray(batchFrames)
-            #batchFrames[0] = frames_og
             batchNoise  = np.asarray(batchNoise)
 
             prediction = sess.run(gen_actions, feed_dict={frames_p:batchFrames, noise_p:batchNoise})[0]
-            #prediction = np.array(prediction) * np.array([4.5, 0.1, 0.1, 0.1,  1.8, 1.8, 0.5, 0.5, 0.2])
 
             mode_choice = np.argmax(prediction)
 
@@ -265,8 +234,4 @@ if __name__ == '__main__':
                 print(choice_picked)
                 print()
             counter += 1
-            #motion_log.append(delta_count)
-            #motion_avg = round(mean(motion_log),3)
-            #print('loop took {} seconds. Motion: {}. Choice: {}'.format( round(time.time()-last_time, 3) , motion_avg, choice_picked))
-
         keys = key_check()

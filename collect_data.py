@@ -27,17 +27,6 @@ dataset = sys.argv[1]
 try: os.mkdir(dataset+'/')
 except: pass
 
-'''
-    TODO:
-        - Have continue option that just loads the file and appends
-        - Save periodically so don't run outta RAM
-'''
-if os.path.isfile(dataset+'.npy'):
-    pass
-    #a = input('File '+dataset+' already exists, overwrite? (y/n)\n')
-    #if a == 'y': pass
-    #else: exit()
-
 def keys_to_output(keys):
     '''
     Convert keys to a ...multi-hot... array
@@ -66,10 +55,7 @@ def keys_to_output(keys):
         output = nk
     return output
 
-import ipdb
-
 def main(dataset):
-    training_data = []
     # sleeps for 4 seconds
     for i in list(range(4))[::-1]:
         print(i+1)

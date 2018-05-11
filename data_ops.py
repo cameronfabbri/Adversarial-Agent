@@ -40,7 +40,6 @@ def readDataset(dataset):
 
     # this isn't in correct order but that's okay because we just pick one, then get the rest from the dictionary
     image_paths = sorted(glob(dataset+'/*.png'))
-    new_dict = {}
 
     pkl_file = open(dataset+'/actions.pkl', 'rb')
     a = pickle.load(pkl_file)

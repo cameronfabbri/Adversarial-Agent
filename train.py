@@ -48,8 +48,8 @@ if __name__ == '__main__':
 
     global_step = tf.Variable(0, name='global_step', trainable=False)
 
-    frames_p     = tf.placeholder(tf.float32, shape=(BATCH_SIZE,256,256,1*numFrames), name='frames_p')
-    noise_p      = frames_p_n   = tf.placeholder(tf.float32, shape=(BATCH_SIZE,256,256,1), name='frames_p')
+    frames_p     = tf.placeholder(tf.float32, shape=(BATCH_SIZE,256,256,3*numFrames), name='frames_p')
+    noise_p      = tf.placeholder(tf.float32, shape=(BATCH_SIZE,256,256,1), name='frames_p')
     real_actions = tf.placeholder(tf.float32, shape=(BATCH_SIZE, num_actions), name='real_actions')
 
     # generate an set of actions given a series of n frames - possibly with noise
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     # send frames with generated actions to D
     D_fake = netD(frames_p, gen_actions, reuse=True)
 
-    e = 1e-2
+    e = 1e-6
     # cost functions
     if ganLoss == 'wgan':
         errD = tf.reduce_mean(D_real) - tf.reduce_mean(D_fake)
@@ -158,11 +158,9 @@ if __name__ == '__main__':
 
             # get first frame
             frames = cv2.imread(train_paths[start_idx])
-            frames = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
 
             # convert to range [-1,1]
             frames = preprocess(frames)
-            frames = np.expand_dims(frames, 2)
 
             if numFrames > 1:
                 for i in range(numFrames-1):
@@ -174,7 +172,7 @@ if __name__ == '__main__':
 
             # get actions - only get first action - put in range [-1, 1]
             action = info_dict[train_paths[start_idx]]
-            #action = ((high-low)*(action-np.min(action))/(np.max(action)-np.min(action)))+low
+            action = ((high-low)*(action-np.min(action))/(np.max(action)-np.min(action)))+low
 
             batchActions.append(action)
             batchFrames.append(frames)
