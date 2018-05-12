@@ -202,9 +202,8 @@ if __name__ == '__main__':
 
         gen_action, real_action = sess.run([gen_actions,real_actions], feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
         #print(chr(27) + "[2J")
-        print(gen_action)#.astype('int32'))
+        print(gen_action[0])#.astype('int32'))
         print(real_action[0].astype('int32'))
-        exit()
 
         summary_writer.add_summary(summary, step)
         print('epoch:',epoch_num,'step:',step,'D loss:',D_loss,'G loss:',G_loss,'\n\n')
