@@ -23,6 +23,7 @@ from statistics import mode,mean
 import numpy as np
 #from motion import motion_detection
 import tensorflow as tf
+from random import randint
 
 from data_ops import *
 from nets import *
@@ -51,6 +52,7 @@ def straight():
     ReleaseKey(S)
 
 def left():
+    PressKey(W)
     if random.randrange(0,3) == 1:
         PressKey(W)
     else:
@@ -61,6 +63,7 @@ def left():
     ReleaseKey(D)
 
 def right():
+    PressKey(W)
     if random.randrange(0,3) == 1:
         PressKey(W)
     else:
@@ -71,6 +74,7 @@ def right():
     ReleaseKey(S)
     
 def reverse():
+    PressKey(W)
     PressKey(S)
     ReleaseKey(A)
     ReleaseKey(W)
@@ -118,7 +122,7 @@ def no_keys():
 
 if __name__ == '__main__':
 
-    BATCH_SIZE = 2
+    BATCH_SIZE = 16
     num_actions = 9
 
     parser = argparse.ArgumentParser()
@@ -211,7 +215,8 @@ if __name__ == '__main__':
             batchNoise  = np.asarray(batchNoise)
 
             prediction = np.asarray(sess.run(gen_actions, feed_dict={frames_p:batchFrames, noise_p:batchNoise}))
-            prediction = prediction[0]
+            iii = randint(0, BATCH_SIZE-1)
+            prediction = prediction[iii]
             mode_choice = np.argmax(prediction)
 
             if mode_choice == 0:
