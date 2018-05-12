@@ -89,16 +89,16 @@ def main(dataset):
         keys = key_check()
         if 'T' in keys:
             print('Saving and quitting...')
-            pkl = open(dataset+'/actions_p3.pkl', 'wb')
+            pkl = open(dataset+'/actions.pkl', 'wb')
             data = pickle.dumps(info_dict)
             pkl.write(data)
             pkl.close()
 
             # write out same file but for reading in python 2
-            pkl = open(dataset+'/actions_p2.pkl', 'wb')
-            data = pickle.dumps(info_dict, protocol=2)
-            pkl.write(data)
-            pkl.close()
+            #pkl = open(dataset+'/actions_p2.pkl', 'wb')
+            #data = pickle.dumps(info_dict, protocol=2)
+            #pkl.write(data)
+            #pkl.close()
             break
 
 main(dataset)

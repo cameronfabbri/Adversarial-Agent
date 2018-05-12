@@ -17,7 +17,7 @@ from data_ops import *
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset',required=False,default='driving1',type=str,help='Dataset to use for training')
+    parser.add_argument('--dataset',required=False,default='driving',type=str,help='Dataset to use for training')
     parser.add_argument('--ganLoss',required=False,default='gan',type=str,help='Type of GAN loss to use')
     parser.add_argument('--numFrames',required=False,default=1,type=int,help='Number of frames to send in at once')
     parser.add_argument('--useNoise',required=False,default=1,type=int,help='Whether or not to use noise')
@@ -121,6 +121,10 @@ if __name__ == '__main__':
             print('Could not restore model')
             raise
 
+    #var = [v for v in tf.trainable_variables() if v.name == "g_conv1/weights:0"][0]
+    #print(sess.run(var))
+    #exit()
+
     step = int(sess.run(global_step))
 
     merged_summary_op = tf.summary.merge_all()
@@ -156,15 +160,12 @@ if __name__ == '__main__':
                 end_idx = num_train-1
                 start_idx = num_train-numFrames
 
-            # get first frame
             frames = cv2.imread(train_paths[start_idx])
-
-            # convert to range [-1,1]
             frames = preprocess(frames)
 
-            if numFrames > 1:
-                for i in range(numFrames-1):
-                    frames = np.dstack((frames, preprocess(cv2.imread(train_paths[start_idx+i+1]))))
+            #if numFrames > 1:
+            #    for i in range(numFrames-1):
+            #        frames = np.dstack((frames, preprocess(cv2.imread(train_paths[start_idx+i+1]))))
 
             # add noise
             noise = np.random.normal(-1.0, 1.0, size=[256,256,1]).astype(np.float32)
@@ -201,8 +202,9 @@ if __name__ == '__main__':
 
         gen_action, real_action = sess.run([gen_actions,real_actions], feed_dict={frames_p:batchFrames, noise_p:batchNoise, real_actions:batchActions})
         #print(chr(27) + "[2J")
-        print(gen_action[0])#.astype('int32'))
+        print(gen_action)#.astype('int32'))
         print(real_action[0].astype('int32'))
+        exit()
 
         summary_writer.add_summary(summary, step)
         print('epoch:',epoch_num,'step:',step,'D loss:',D_loss,'G loss:',G_loss,'\n\n')

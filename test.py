@@ -118,11 +118,11 @@ def no_keys():
 
 if __name__ == '__main__':
 
-    BATCH_SIZE = 1
+    BATCH_SIZE = 2
     num_actions = 9
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset',required=False,default='driving1',type=str,help='Dataset to use for training')
+    parser.add_argument('--dataset',required=False,default='driving',type=str,help='Dataset to use for training')
     parser.add_argument('--ganloss',required=False,default='gan',type=str,help='Type of GAN loss to use')
     parser.add_argument('--numFrames',required=False,default=1,type=int,help='Number of frames to send in at once')
     parser.add_argument('--useNoise',required=False,default=1,type=int,help='Whether or not to use noise')
@@ -139,11 +139,11 @@ if __name__ == '__main__':
 
     frames_p = tf.placeholder(tf.float32, shape=(BATCH_SIZE,256,256,3*numFrames), name='frames_p')
     noise_p  = tf.placeholder(tf.float32, shape=(BATCH_SIZE,256,256,1), name='noise_p')
-    real_actions = tf.placeholder(tf.float32, shape=(BATCH_SIZE, num_actions), name='real_actions')
+
     # generate an set of actions
     gen_actions = netG(frames_p, noise_p, num_actions, useNoise)
 
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(max_to_keep=1)
     init = tf.group(tf.local_variables_initializer(), tf.global_variables_initializer())
     sess = tf.Session()
     sess.run(init)
@@ -160,6 +160,11 @@ if __name__ == '__main__':
             print('Could not restore model')
             raise
 
+    #print(tf.trainable_variables())
+    #var = [v for v in tf.trainable_variables() if v.name == "g_conv1/weights:0"][0]
+    #print(sess.run(var))
+    #exit()
+
     paused = False
     counter = 0
 
@@ -175,63 +180,74 @@ if __name__ == '__main__':
             batchFrames = []
             batchNoise  = []
 
-            # get the first frame
             frames = grab_screen(region=(0,40,800,625))
-            frames = cv2.cvtColor(frames, cv2.COLOR_BGR2RGB)
             frames = cv2.resize(frames, (256,256))
-            
-            #cv2.imwrite('frames.png', frames)
-            #exit()
+            frames = cv2.cvtColor(frames, cv2.COLOR_BGR2RGB)
 
-            # convert to range [-1,1]
-            frames = preprocess(frames)
-
-            noise = np.random.normal(-1.0, 1.0, size=[256,256,1]).astype(np.float32)
-
-            # grab BATCH_SIZE-1 random training images
+            # grab BATCH_SIZE random training images
             while current_size < BATCH_SIZE:
-                batchFrames.append(frames)
+
+                #start_idx = random.randint(0,num_train)
+                #end_idx   = start_idx + (numFrames-1)
+
+                # end case check
+                #if end_idx >= num_train:
+                #    end_idx = num_train-1
+                #    start_idx = num_train-numFrames
+
+                #frames = cv2.imread(train_paths[start_idx])
+                frames = preprocess(frames)
+
+                noise = np.random.normal(-1.0, 1.0, size=[256,256,1]).astype(np.float32)
                 batchNoise.append(noise)
+                batchFrames.append(frames)
                 current_size += 1
 
+            #cv2.imwrite('frames.png', frames)
+            #exit()
+            #batchFrames.append(frames)
+            #batchNoise.append(noise)
             batchFrames = np.asarray(batchFrames)
             batchNoise  = np.asarray(batchNoise)
 
-            prediction = sess.run(gen_actions, feed_dict={frames_p:batchFrames, noise_p:batchNoise})[0]
-
+            prediction = np.asarray(sess.run(gen_actions, feed_dict={frames_p:batchFrames, noise_p:batchNoise}))
+            prediction = prediction[0]
             mode_choice = np.argmax(prediction)
 
             if mode_choice == 0:
-                #straight()
+                straight()
                 choice_picked = 'straight'
             elif mode_choice == 1:
-                #reverse()
+                reverse()
                 choice_picked = 'reverse'
             elif mode_choice == 2:
-                #left()
+                left()
                 choice_picked = 'left'
             elif mode_choice == 3:
-                #right()
+                right()
                 choice_picked = 'right'
             elif mode_choice == 4:
-                #forward_left()
+                forward_left()
                 choice_picked = 'forward+left'
             elif mode_choice == 5:
-                #forward_right()
+                forward_right()
                 choice_picked = 'forward+right'
             elif mode_choice == 6:
-                #reverse_left()
+                reverse_left()
                 choice_picked = 'reverse+left'
             elif mode_choice == 7:
-                #reverse_right()
+                reverse_right()
                 choice_picked = 'reverse+right'
             elif mode_choice == 8:
-                #no_keys()
+                no_keys()
                 choice_picked = 'nokeys'
 
             if counter % 10 == 0:
                 print(prediction)
-                print(choice_picked)
                 print()
+                #exit()
+                #print(choice_picked)
+                #print()
+                #print(frames)
             counter += 1
         keys = key_check()
